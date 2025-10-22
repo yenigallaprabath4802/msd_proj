@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Locations</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .location { border:1px solid #ddd; padding:12px; margin:12px 0; }
+    .location img { max-width:150px; display:block; margin-bottom:8px; }
+    .actions a { margin-right:10px; color:#e74c3c; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Locations</h1>
+    <div id="locationsList">Loading...</div>
+  </div>
+
+<script>
+async function loadLocations() {
+  try {
+    const res = await fetch('/api/locations');
+    if (!res.ok) throw new Error('Failed to load locations');
+    const locations = await res.json();
+    const el = document.getElementById('locationsList');
+    if (!locations.length) { el.innerHTML = '<p>No locations available.</p>'; return; }
+    el.innerHTML = locations.map(l => `
+      <div class="location">
+        <h3>${l.name}</h3>
+        ${l.image ? `<img src="${l.image}" alt="${l.name}">` : ''}
+        <p>${l.description || ''}</p>
+        <p>Price: ₹${l.price || 'N/A'}</p>
+        <div class="actions">
+          <a href="/booking.html?loc=${l._id}">Book</a>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error(err);
+    document.getElementById('locationsList').innerHTML = '<p>Unable to load locations.</p>';
+  }
+}
+
+window.addEventListener('load', loadLocations);
+</script>
+</body>
+</html>

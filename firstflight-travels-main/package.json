@@ -1,0 +1,11 @@
+{
+  "name": "firstflight-travels",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node backend-project/src/server.js",
+    "dev": "nodemon backend-project/src/server.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

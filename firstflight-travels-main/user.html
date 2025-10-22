@@ -1,0 +1,215 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>User Profile</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    :root{
+      --accent:#e74c3c;
+      --muted:#666;
+      --card-bg:#fff;
+      --surface:#f7f7f8;
+      --max-w:1100px;
+    }
+    body{
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg,#fafafa 0%, #fff 100%);
+      color:#222;
+      margin:0;
+      padding:24px;
+      -webkit-font-smoothing:antialiased;
+    }
+    .wrap{
+      max-width:var(--max-w);
+      margin:0 auto;
+      display:flex;
+      gap:24px;
+      align-items:flex-start;
+    }
+    header.appbar{
+      width:100%;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:18px;
+    }
+    header.appbar h1{
+      font-size:20px;
+      margin:0;
+    }
+    .btn {
+      display:inline-block;
+      padding:8px 12px;
+      background:var(--accent);
+      color:#fff;
+      border-radius:6px;
+      text-decoration:none;
+      border:none;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .profile {
+      width:320px;
+      background:var(--card-bg);
+      border:1px solid #e6e6e6;
+      padding:18px;
+      border-radius:8px;
+      box-shadow:0 2px 6px rgba(0,0,0,0.03);
+    }
+    .profile .avatar{
+      width:72px;
+      height:72px;
+      border-radius:50%;
+      background:#eee;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      color:var(--muted);
+      margin-bottom:12px;
+      font-size:20px;
+    }
+    .meta { color:var(--muted); margin-bottom:12px; }
+    .bookings {
+      flex:1;
+      background:var(--surface);
+      padding:18px;
+      border-radius:8px;
+      min-height:200px;
+    }
+    .bookings h2{ margin-top:0; }
+    .booking-card{
+      background:#fff;
+      border:1px solid #e6e6e6;
+      padding:12px;
+      margin-bottom:12px;
+      border-radius:6px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+    }
+    .booking-left{max-width:72%}
+    .booking-actions{ text-align:right; min-width:110px; display:flex; flex-direction:column; gap:8px; }
+    .link { color:var(--accent); text-decoration:none; font-weight:600; }
+    .muted { color:var(--muted); font-size:13px; }
+    @media (max-width:900px){
+      .wrap{flex-direction:column;padding:12px}
+      .profile{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <header class="appbar">
+    <h1>Your Account</h1>
+    <div>
+      <span id="topUsername" class="muted" style="margin-right:12px"></span>
+      <button id="logoutBtnTop" class="btn">Log out</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <aside class="profile" id="profileCard">
+      <div class="avatar" id="avatar">U</div>
+      <div id="userInfoBlock">
+        <div style="font-weight:700" id="displayName">User</div>
+        <div class="meta" id="displayEmail">email@example.com</div>
+        <div class="muted" id="joined">Joined: -</div>
+      </div>
+      <div style="margin-top:12px">
+        <a href="/booking.html" class="btn">Book a Ticket</a>
+        <a href="/locations.html" style="margin-left:8px" class="link">Browse Locations</a>
+      </div>
+    </aside>
+
+    <main class="bookings" id="bookingsSection">
+      <h2>Your Bookings</h2>
+      <div id="bookingsList">Loading...</div>
+    </main>
+  </div>
+
+<script>
+async function fetchProfile() {
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/login.html'; return; }
+
+  try {
+    const res = await fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token }});
+    const data = await res.json();
+    if (!res.ok) { alert(data.message || 'Auth required'); localStorage.removeItem('token'); window.location.href = '/login.html'; return; }
+
+    const user = data.user;
+    // header
+    document.getElementById('topUsername').textContent = user.username || user.email;
+    // profile card
+    document.getElementById('displayName').textContent = user.username || user.email;
+    document.getElementById('displayEmail').textContent = user.email || '';
+    document.getElementById('joined').textContent = user.createdAt ? ('Joined: ' + new Date(user.createdAt).toLocaleDateString()) : '';
+    const avatar = (user.username || user.email || '').trim().charAt(0).toUpperCase() || 'U';
+    document.getElementById('avatar').textContent = avatar;
+
+    // bookings
+    const bookings = data.bookings || [];
+    const el = document.getElementById('bookingsList');
+    if (!bookings.length) {
+      el.innerHTML = '<p>No bookings yet. <a href="/booking.html" class="link">Make one now</a>.</p>';
+      return;
+    }
+
+    el.innerHTML = bookings.map(b => {
+      const locationName = b.location?.name || 'Location';
+      const dates = `${new Date(b.startDate).toLocaleDateString()} → ${new Date(b.endDate).toLocaleDateString()}`;
+      const price = b.totalPrice !== undefined ? '₹' + b.totalPrice : 'N/A';
+      return `
+        <div class="booking-card" data-id="${b._id}">
+          <div class="booking-left">
+            <div style="font-weight:700">${locationName}</div>
+            <div class="muted">${dates}</div>
+            <div style="margin-top:8px">Price: <strong>${price}</strong></div>
+            <div style="margin-top:6px" class="muted">Status: ${b.status || 'confirmed'}</div>
+          </div>
+          <div class="booking-actions">
+            <a class="link" href="/booking.html?id=${b._id}">View Ticket</a>
+            <button class="btn cancelBtn" data-id="${b._id}" style="background:#777">Cancel</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // attach cancel handlers
+    document.querySelectorAll('.cancelBtn').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        const id = btn.dataset.id;
+        if (!confirm('Cancel this booking?')) return;
+        try {
+          const r = await fetch('/api/bookings/' + id, {
+            method: 'DELETE',
+            headers: { Authorization: 'Bearer ' + token }
+          });
+          const rr = await r.json();
+          if (!r.ok) { alert(rr.message || 'Failed to cancel'); return; }
+          alert('Booking cancelled');
+          fetchProfile(); // refresh
+        } catch (err) {
+          console.error(err);
+          alert('Cancel failed');
+        }
+      });
+    });
+
+  } catch (err) {
+    console.error(err);
+    alert('Error loading profile');
+  }
+}
+
+document.getElementById('logoutBtnTop').addEventListener('click', () => {
+  localStorage.removeItem('token');
+  window.location.href = '/login.html';
+});
+
+fetchProfile();
+</script>
+</body>
+</html>

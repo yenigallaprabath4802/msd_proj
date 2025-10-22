@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sign Up</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Create Account</h1>
+    <form id="signupForm">
+      <input id="fullName" name="username" placeholder="Full Name" required>
+      <input id="email" name="email" type="email" placeholder="Email" required>
+      <input id="password" name="password" type="password" placeholder="Password" required>
+      <button type="submit">Sign Up</button>
+    </form>
+  </div>
+
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const payload = {
+    username: form.username.value.trim(),
+    email: form.email.value.trim(),
+    password: form.password.value
+  };
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.message || 'Error'); console.error('signup error', data); return; }
+    window.location.href = '/login.html';
+  } catch (err) {
+    console.error('Fetch error:', err);
+    alert('Server error. Please try again.');
+  }
+});
+</script>
+</body>
+</html>
